@@ -1,63 +1,56 @@
 import React from 'react'
-import { render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom/extend-expect'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import Blog from './Blog'
-import App from '../App'
 
-const blog = {
-  title: 'Test Engineering',
-  author: 'Gerhard Berger',
-  url: 'http://greatblogs.com/gberger/testing',
-  likes: 234,
-  user: {
-    username: 'mluukkai',
-    name: 'Matti Luukkainen'
-  }
-}
+describe('blog', () => {
+  let onLike = jest.fn()
 
-const user = {
-  username: 'mluukkai',
-  name: 'Matti Luukkainen'
-}
+  beforeEach(() => {
+    const blog = {
+      title: 'Testing is easy',
+      author: 'Kalle Ilves',
+      url: 'http://lynx.fi/testing',
+      likes: 5
+    }
 
-test('renders only title and author by default', () => {
-  const { container } = render(<Blog blog={blog} user={user} handleAddLike={() =>
-    App.handleAddLike} handleRemoveBlog={() => App.handleRemoveBlog} />)
+    render(<Blog blog={blog} likeBlog={onLike} removeBlog={() => {}} />)
+  })
 
-  const lessInfo = container.querySelector('.lessInfo')
-  const moreInfo = container.querySelector('.moreInfo')
+  test('renders by default only title and author', () => {
+    const authorElement = screen.getByText('Kalle Ilves', { exact: false })
+    expect(authorElement).toBeDefined()
 
-  expect(lessInfo).toBeVisible()
-  expect(moreInfo).not.toBeVisible()
-})
+    const titleElement = screen.getByText('Testing is easy', { exact: false })
+    expect(titleElement).toBeDefined()
 
-test('renders all info after "show" button has been pressed', () => {
-  const { container } = render(<Blog blog={blog} user={user} handleAddLike={() =>
-    App.handleAddLike} handleRemoveBlog={() => App.handleRemoveBlog} />)
+    const urlElement = screen.queryByText('http://lynx.fi/testing')
+    expect(urlElement).toBeNull()
 
-  const button = screen.getByText('view')
-  userEvent.click(button)
+    const likesElement = screen.queryByText('likes 5')
+    expect(likesElement).toBeNull()
+  })
 
-  const lessInfo = container.querySelector('.lessInfo')
-  const moreInfo = container.querySelector('.moreInfo')
+  test('when expanded also url and like rendered', () => {
+    const showButton = screen.getByText('view')
+    userEvent.click(showButton)
 
-  expect(lessInfo).not.toBeVisible()
-  expect(moreInfo).toBeVisible()
-})
+    const urlElement = screen.getByText('http://lynx.fi/testing')
+    expect(urlElement).toBeDefined()
 
-test('event handler is called twice when "like" button is pressed twice', () => {
-  const mockHandler = jest.fn()
+    const likesElement = screen.getByText('5 likes')
+    expect(likesElement).toBeDefined()
+  })
 
-  render(<Blog blog={blog} user={user} handleAddLike={mockHandler}
-    handleRemoveBlog={() => App.handleRemoveBlog} />)
+  test('when liked twice, handler is called twice', () => {
+    const showButton = screen.getByText('view')
+    userEvent.click(showButton)
 
-  const viewButton = screen.getByText('view')
-  userEvent.click(viewButton)
+    const likeButton = screen.getByText('like')
+    userEvent.click(likeButton)
+    userEvent.click(likeButton)
 
-  const likeButton = screen.getByText('like')
-  userEvent.click(likeButton)
-  userEvent.click(likeButton)
-
-  expect(mockHandler.mock.calls).toHaveLength(2)
+    expect(onLike.mock.calls).toHaveLength(2)
+  })
 })

@@ -1,83 +1,58 @@
 const _ = require('lodash')
-// const dummy = (blogs) => {
-//   return 1
-// }
+const dummy = (blogs) => 1
 
 const totalLikes = (blogs) => {
-  const reducer = (sum, blog) => {
-    return sum + blog.likes
+  if (blogs.length === 0) {
+    return 0
   }
 
-  return Object.keys(blogs).length === 0
-    ? 0
-    : blogs.reduce(reducer, 0)
+  return blogs.reduce((sum, b) => sum + b.likes, 0)
 }
 
-const favoriteBlog = (blogs) => {
-  if (Object.keys(blogs).length === 0) {
-    return {}
+const favoriteBlogs = (blogs) => {
+  if (blogs.length === 0) {
+    return undefined
   }
 
-  const reducer = (max, blog) => {
-    return max.likes > blog.likes
-      ? max
-      : blog
-  }
-
-  let favoriteBlog = blogs.reduce(reducer, {})
-
-  return {
-    title: favoriteBlog.title,
-    author: favoriteBlog.author,
-    likes: favoriteBlog.likes
-  }
+  return blogs.sort((a, b) => b.likes - a.likes)[0]
 }
 
 const mostBlogs = (blogs) => {
-  if (Object.keys(blogs).length === 0) {
-    return {}
+  if (blogs.length === 0) {
+    return undefined
   }
 
-  const authorBlogs = _.map(
-    _.countBy(blogs, 'author'), (val, key) => {
-      return { author: key, blogs: val }
+  const byAuthor = _.groupBy(blogs, (b) => b.author)
+  const likeCounts = Object.keys(byAuthor).map((name) => {
+    return {
+      name,
+      blogs: byAuthor[name].length
     }
-  )
+  })
 
-  const reducer = (max, author) => {
-    return max.blogs > author.blogs
-      ? max
-      : author
-  }
-
-  return authorBlogs.reduce(reducer, {})
+  return likeCounts.sort((a, b) => b.blogs - a.blogs)[0].name
 }
 
 const mostLikes = (blogs) => {
-  if (Object.keys(blogs).length === 0) {
-    return {}
+  if (blogs.length === 0) {
+    return undefined
   }
 
-  const authorLikes = _(blogs)
-    .groupBy('author')
-    .map((objs, key) => ({
-      'author': key,
-      'likes': _.sumBy(objs, 'likes') }))
-    .value()
+  const byAuthor = _.groupBy(blogs, (b) => b.author)
+  const likeCounts = Object.keys(byAuthor).map((name) => {
+    return {
+      name,
+      likes: byAuthor[name].reduce((s, b) => s + b.likes, 0)
+    }
+  })
 
-  const reducer = (max, author) => {
-    return max.likes > author.likes
-      ? max
-      : author
-  }
-
-  return authorLikes.reduce(reducer, {})
+  return likeCounts.sort((a, b) => b.likes - a.likes)[0].name
 }
 
 module.exports = {
-  //dummy,
+  dummy,
   totalLikes,
-  favoriteBlog,
+  favoriteBlogs,
   mostBlogs,
   mostLikes
 }

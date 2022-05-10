@@ -1,57 +1,69 @@
 import { useState } from 'react'
 import PropTypes from 'prop-types'
 
-const Blog = ({ blog, user, handleAddLike, handleRemoveBlog }) => {
-  const [showInfo, setShowInfo] = useState(false)
+const BlogDetails = ({ blog, visible, likeBlog, removeBlog, own }) => {
+  if (!visible) return null
 
-  const blogStyle = {
-    paddingTop: 10,
-    paddingLeft: 2,
-    border: 'solid',
-    borderWidth: 1,
-    marginBottom: 5
-  }
-
-  const hideContent = { display: showInfo ? 'none' : '' }
-  const showContent = { display: showInfo ? '' : 'none' }
+  const addedBy = blog.user && blog.user.name ? blog.user.name : 'anonymous'
 
   return (
-    <div className="blog" style={blogStyle}>
-      <div className="lessInfo" style={hideContent}>
-        {blog.title} {blog.author}
-        <button className="view-button" onClick={() => setShowInfo(true)}>
-          view
-        </button>
+    <div>
+      <div>
+        <a href={blog.url}>{blog.url}</a>
       </div>
-      <div className="moreInfo" style={showContent}>
-        <div>
-          {blog.title} {blog.author}
-          <button className="hide-button" onClick={() => setShowInfo(false)}>
-            hide
-          </button>
-        </div>
-        <div>{blog.url}</div>
-        <div>
-          likes {blog.likes}
-          <button className="like-button" onClick={handleAddLike}>
-            like
-          </button>
-        </div>
-        <div>{blog.user.name}</div>
-        {user.username === blog.user.username && (
-          <button className="remove-button" onClick={handleRemoveBlog}>
-            remove
-          </button>
-        )}
+      <div>
+        {blog.likes} likes{' '}
+        <button onClick={() => likeBlog(blog.id)}>like</button>
       </div>
+      {addedBy}
+      {own && <button onClick={() => removeBlog(blog.id)}>remove</button>}
+    </div>
+  )
+}
+
+const Blog = ({ blog, likeBlog, removeBlog, user }) => {
+  const [visible, setVisible] = useState(false)
+
+  const style = {
+    padding: 3,
+    margin: 5,
+    borderStyle: 'solid',
+    borderWidth: 1
+  }
+
+  return (
+    <div style={style} className="blog">
+      {blog.title} {blog.author}
+      <button onClick={() => setVisible(!visible)}>
+        {visible ? 'hide' : 'view'}
+      </button>
+      <BlogDetails
+        blog={blog}
+        visible={visible}
+        likeBlog={likeBlog}
+        removeBlog={removeBlog}
+        own={blog.user && user.username === blog.user.username}
+      />
     </div>
   )
 }
 
 Blog.propTypes = {
-  blog: PropTypes.object.isRequired,
-  handleAddLike: PropTypes.func.isRequired,
-  handleRemoveBlog: PropTypes.func.isRequired
+  blog: PropTypes.shape({
+    title: PropTypes.string.isRequired,
+    author: PropTypes.string.isRequired,
+    url: PropTypes.string.isRequired,
+    likes: PropTypes.number.isRequired,
+    user: PropTypes.shape({
+      username: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired
+    })
+  }).isRequired,
+  user: PropTypes.shape({
+    username: PropTypes.string.isRequired
+  }),
+  likeBlog: PropTypes.func.isRequired,
+  removeBlog: PropTypes.func.isRequired
 }
 
 export default Blog

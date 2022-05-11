@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 
 import Blog from './components/Blog'
 import LoginForm from './components/LoginForm'
@@ -9,6 +9,8 @@ import Togglable from './components/Togglable'
 import blogService from './services/blogs'
 import loginService from './services/login'
 import userService from './services/user'
+
+import { useGetBlogsQuery, useAddNewBlogMutation } from './services/blogsApi'
 
 import { useDispatch } from 'react-redux'
 import {
@@ -32,6 +34,27 @@ const App = () => {
       setUser(userFromStorage)
     }
   }, [])
+
+  const {
+    data: newBlogs = [],
+    error,
+    isLoading,
+    isSuccess
+  } = useGetBlogsQuery()
+
+  const [
+    addNewBlog,
+    { error: postError, isSuccess: postSuccess, isError: isPostError }
+  ] = useAddNewBlogMutation()
+
+  const sortedBlogs = useMemo(
+    () => {
+      const sortedBlogs = newBlogs.slice()
+      sortedBlogs.sort(byLikes)
+      return sortedBlogs
+    },
+    [newBlogs]
+  )
 
   let timerId = undefined
 
@@ -59,19 +82,29 @@ const App = () => {
     notify('good bye!')
   }
 
-  const createBlog = async (blog) => {
-    blogService
-      .create(blog)
-      .then((createdBlog) => {
-        notify(
-          `a new blog '${createdBlog.title}' by ${createdBlog.author} added`
-        )
-        setBlogs(blogs.concat(createdBlog))
-        blogFormRef.current.toggleVisibility()
-      })
-      .catch((error) => {
-        notify('creating a blog failed: ' + error.response.data.error, 'alert')
-      })
+  const createBlog = (blog) => {
+    // blogService
+    //   .create(blog)
+    //   .then((createdBlog) => {
+    //     notify(
+    //       `a new blog '${createdBlog.title}' by ${createdBlog.author} added`
+    //     )
+    //     setBlogs(blogs.concat(createdBlog))
+    //     blogFormRef.current.toggleVisibility()
+    //   })
+    //   .catch((error) => {
+    //     notify('creating a blog failed: ' + error.response.data.error, 'alert')
+    //   })
+
+    addNewBlog(blog)
+    if (postSuccess) {
+      notify(`a new blog '${blog.title}' by ${blog.author} added`)
+      blogFormRef.current.toggleVisibility()
+    }
+
+    if (isPostError) {
+      notify('creating a blog failed: ' + postError, 'alert')
+    }
   }
 
   const removeBlog = (id) => {
@@ -144,17 +177,24 @@ const App = () => {
         <NewBlogForm onCreate={createBlog} />
       </Togglable>
 
-      <div id="blogs">
-        {blogs.map((blog) => (
-          <Blog
-            key={blog.id}
-            blog={blog}
-            likeBlog={likeBlog}
-            removeBlog={removeBlog}
-            user={user}
-          />
-        ))}
+      <div className="isErrorIsLoading">
+        {error && <p>Error fetching data</p>}
+        {isLoading && <p>Loading...</p>}
       </div>
+
+      {isSuccess && (
+        <div id="blogs">
+          {sortedBlogs.map((blog) => (
+            <Blog
+              key={blog.id}
+              blog={blog}
+              likeBlog={likeBlog}
+              removeBlog={removeBlog}
+              user={user}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -6,11 +6,15 @@ import NewBlogForm from './components/NewBlogForm'
 import Notification from './components/Notification'
 import Togglable from './components/Togglable'
 
-import blogService from './services/blogs'
 import loginService from './services/login'
 import userService from './services/user'
 
-import { useGetBlogsQuery, useAddNewBlogMutation } from './services/blogsApi'
+import {
+  useGetBlogsQuery,
+  useAddNewBlogMutation,
+  useRemoveBlogMutation,
+  useUpdateBlogMutation
+} from './services/blogsApi'
 
 import { useDispatch } from 'react-redux'
 import {
@@ -19,14 +23,22 @@ import {
 } from './reducers/notificationReducer'
 
 const App = () => {
-  const [blogs, setBlogs] = useState([])
+  const { data: blogs = [], error, isLoading, isSuccess } = useGetBlogsQuery()
+
+  const [
+    addNewBlog,
+    { error: postError, isError: isPostError }
+  ] = useAddNewBlogMutation()
+
+  const [
+    deleteBlog,
+    { error: deleteError, isError: isDeleteError }
+  ] = useRemoveBlogMutation()
+
+  const [updateBlog] = useUpdateBlogMutation()
+
   const [user, setUser] = useState(null)
   const blogFormRef = useRef()
-  const byLikes = (b1, b2) => (b2.likes > b1.likes ? 1 : -1)
-
-  useEffect(() => {
-    blogService.getAll().then((blogs) => setBlogs(blogs.sort(byLikes)))
-  }, [])
 
   useEffect(() => {
     const userFromStorage = userService.getUser()
@@ -35,30 +47,18 @@ const App = () => {
     }
   }, [])
 
-  const {
-    data: newBlogs = [],
-    error,
-    isLoading,
-    isSuccess
-  } = useGetBlogsQuery()
+  let timerId = undefined
+  const dispatch = useDispatch()
 
-  const [
-    addNewBlog,
-    { error: postError, isSuccess: postSuccess, isError: isPostError }
-  ] = useAddNewBlogMutation()
-
+  const byLikes = (b1, b2) => (b2.likes > b1.likes ? 1 : -1)
   const sortedBlogs = useMemo(
     () => {
-      const sortedBlogs = newBlogs.slice()
+      const sortedBlogs = blogs.slice()
       sortedBlogs.sort(byLikes)
       return sortedBlogs
     },
-    [newBlogs]
+    [blogs]
   )
-
-  let timerId = undefined
-
-  const dispatch = useDispatch()
 
   const login = async (username, password) => {
     loginService
@@ -82,29 +82,16 @@ const App = () => {
     notify('good bye!')
   }
 
-  const createBlog = (blog) => {
-    // blogService
-    //   .create(blog)
-    //   .then((createdBlog) => {
-    //     notify(
-    //       `a new blog '${createdBlog.title}' by ${createdBlog.author} added`
-    //     )
-    //     setBlogs(blogs.concat(createdBlog))
-    //     blogFormRef.current.toggleVisibility()
-    //   })
-    //   .catch((error) => {
-    //     notify('creating a blog failed: ' + error.response.data.error, 'alert')
-    //   })
-
-    addNewBlog(blog)
-    if (postSuccess) {
-      notify(`a new blog '${blog.title}' by ${blog.author} added`)
-      blogFormRef.current.toggleVisibility()
-    }
+  const createBlog = async (blog) => {
+    await addNewBlog(blog)
 
     if (isPostError) {
       notify('creating a blog failed: ' + postError, 'alert')
+      return
     }
+
+    notify(`a new blog '${blog.title}' by ${blog.author} added`)
+    blogFormRef.current.toggleVisibility()
   }
 
   const removeBlog = (id) => {
@@ -118,10 +105,14 @@ const App = () => {
       return
     }
 
-    blogService.remove(id).then(() => {
-      const updatedBlogs = blogs.filter((b) => b.id !== id).sort(byLikes)
-      setBlogs(updatedBlogs)
-    })
+    deleteBlog(id)
+
+    if (isDeleteError) {
+      notify('removing the blog failed: ' + deleteError, 'alert')
+      return
+    }
+
+    notify('blog removed')
   }
 
   const likeBlog = async (id) => {
@@ -132,13 +123,8 @@ const App = () => {
       user: toLike.user.id
     }
 
-    blogService.update(liked.id, liked).then((updatedBlog) => {
-      notify(`you liked '${updatedBlog.title}' by ${updatedBlog.author}`)
-      const updatedBlogs = blogs
-        .map((b) => (b.id === id ? updatedBlog : b))
-        .sort(byLikes)
-      setBlogs(updatedBlogs)
-    })
+    await updateBlog(liked)
+    notify(`you liked '${liked.title}' by ${liked.author}`)
   }
 
   const notify = (message, type = 'info') => {

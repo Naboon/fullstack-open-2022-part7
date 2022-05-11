@@ -1,3 +1,4 @@
+/* eslint-disable indent */
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import userService from './user'
 
@@ -5,7 +6,7 @@ export const blogsApi = createApi({
   reducerPath: 'blogsApi',
   baseQuery: fetchBaseQuery({
     baseUrl: '/api',
-    tagTypes: ['Blog'],
+    tagTypes: ['Blogs'],
     prepareHeaders: (headers) => {
       const token = userService.getToken()
 
@@ -19,17 +20,43 @@ export const blogsApi = createApi({
   endpoints: (builder) => ({
     getBlogs: builder.query({
       query: () => '/blogs',
-      providesTags: ['Blog']
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: 'Blogs', id })),
+              { type: 'Blogs', id: 'LIST' }
+            ]
+          : [{ type: 'Blogs', id: 'LIST' }]
     }),
     addNewBlog: builder.mutation({
-      query: (body) => ({
+      query: (newBlog) => ({
         url: '/blogs',
         method: 'POST',
-        body
+        body: newBlog
       }),
-      invalidatesTags: ['Blog']
+      invalidatesTags: ['Blogs']
+    }),
+    removeBlog: builder.mutation({
+      query: (id) => ({
+        url: `/blogs/${id}`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: [{ type: 'Blogs', id: 'LIST' }]
+    }),
+    updateBlog: builder.mutation({
+      query: (updatedBlog) => ({
+        url: `/blogs/${updatedBlog.id}`,
+        method: 'PUT',
+        body: updatedBlog
+      }),
+      invalidatesTags: [{ type: 'Blogs', id: 'LIST' }]
     })
   })
 })
 
-export const { useGetBlogsQuery, useAddNewBlogMutation } = blogsApi
+export const {
+  useGetBlogsQuery,
+  useAddNewBlogMutation,
+  useRemoveBlogMutation,
+  useUpdateBlogMutation
+} = blogsApi

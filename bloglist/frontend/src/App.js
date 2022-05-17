@@ -23,7 +23,7 @@ import {
   resetNotification
 } from './reducers/notificationReducer'
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { Routes, Route, Link, useMatch } from 'react-router-dom'
 
 const App = () => {
   const Blogs = ({ blogFormRef, user }) => {
@@ -58,7 +58,8 @@ const App = () => {
   const Users = () => {
     const userList = users.map((user) => ({
       name: user.name,
-      blogs: user.blogs.length
+      blogs: user.blogs.length,
+      id: user.id
     }))
 
     return (
@@ -80,14 +81,43 @@ const App = () => {
                 </tr>
                 {userList.map((user) => {
                   return (
-                    <tr key={user.name}>
-                      <td>{user.name}</td>
+                    <tr key={user.id}>
+                      <td>
+                        <Link to={`/users/${user.id}`}>{user.name}</Link>
+                      </td>
                       <td>{user.blogs}</td>
                     </tr>
                   )
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const User = ({ user }) => {
+    if (!user) {
+      return null
+    }
+
+    return (
+      <div>
+        <div className="isErrorIsLoading">
+          {usersError && <p>Error fetching data</p>}
+          {usersLoading && <p>Loading...</p>}
+        </div>
+
+        {userSuccess && (
+          <div>
+            <h2>{user.name}</h2>
+            <h3>added blogs</h3>
+            <ul>
+              {user.blogs.map((blog) => {
+                return <li key={blog.id}>{blog.title}</li>
+              })}
+            </ul>
           </div>
         )}
       </div>
@@ -191,6 +221,11 @@ const App = () => {
     }, 5000)
   }
 
+  const userMatch = useMatch('/users/:id')
+  const userById = userMatch
+    ? users.find((user) => user.id === userMatch.params.id)
+    : null
+
   if (user === null) {
     return (
       <div>
@@ -210,15 +245,14 @@ const App = () => {
         <button onClick={logout}>logout</button>
       </div>
 
-      <Router>
-        <Routes>
-          <Route path="/users" element={<Users />} />
-          <Route
-            path="/"
-            element={<Blogs blogFormRef={blogFormRef} user={user} />}
-          />
-        </Routes>
-      </Router>
+      <Routes>
+        <Route path="/users/:id" element={<User user={userById} />} />
+        <Route path="/users" element={<Users />} />
+        <Route
+          path="/"
+          element={<Blogs blogFormRef={blogFormRef} user={user} />}
+        />
+      </Routes>
     </div>
   )
 }

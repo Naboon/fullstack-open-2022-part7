@@ -2,11 +2,13 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import userService from './user'
 
+const byLikes = (b1, b2) => (b2.likes > b1.likes ? 1 : -1)
+
 export const blogsApi = createApi({
   reducerPath: 'blogsApi',
   baseQuery: fetchBaseQuery({
     baseUrl: '/api',
-    tagTypes: ['Blogs'],
+    tagTypes: ['Blogs', 'Users'],
     prepareHeaders: (headers) => {
       const token = userService.getToken()
 
@@ -20,13 +22,12 @@ export const blogsApi = createApi({
   endpoints: (builder) => ({
     getBlogs: builder.query({
       query: () => '/blogs',
-      providesTags: (result) =>
-        result
-          ? [
-              ...result.map(({ id }) => ({ type: 'Blogs', id })),
-              { type: 'Blogs', id: 'LIST' }
-            ]
-          : [{ type: 'Blogs', id: 'LIST' }]
+      transformResponse: (response) => response.sort(byLikes),
+      providesTags: ['Blogs']
+    }),
+    getUsers: builder.query({
+      query: () => '/users',
+      providesTags: ['Users']
     }),
     addNewBlog: builder.mutation({
       query: (newBlog) => ({
@@ -41,7 +42,7 @@ export const blogsApi = createApi({
         url: `/blogs/${id}`,
         method: 'DELETE'
       }),
-      invalidatesTags: [{ type: 'Blogs', id: 'LIST' }]
+      invalidatesTags: ['Blogs']
     }),
     updateBlog: builder.mutation({
       query: (updatedBlog) => ({
@@ -49,13 +50,14 @@ export const blogsApi = createApi({
         method: 'PUT',
         body: updatedBlog
       }),
-      invalidatesTags: [{ type: 'Blogs', id: 'LIST' }]
+      invalidatesTags: ['Blogs']
     })
   })
 })
 
 export const {
   useGetBlogsQuery,
+  useGetUsersQuery,
   useAddNewBlogMutation,
   useRemoveBlogMutation,
   useUpdateBlogMutation

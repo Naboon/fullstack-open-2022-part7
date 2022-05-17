@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 import Blog from './components/Blog'
 import LoginForm from './components/LoginForm'
@@ -11,6 +11,7 @@ import userService from './services/user'
 
 import {
   useGetBlogsQuery,
+  useGetUsersQuery,
   useAddNewBlogMutation,
   useRemoveBlogMutation,
   useUpdateBlogMutation
@@ -22,18 +23,91 @@ import {
   resetNotification
 } from './reducers/notificationReducer'
 
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+
 const App = () => {
+  const Blogs = ({ blogFormRef, user }) => {
+    return (
+      <div>
+        <Togglable buttonLabel="new note" ref={blogFormRef}>
+          <NewBlogForm onCreate={createBlog} />
+        </Togglable>
+
+        <div className="isErrorIsLoading">
+          {error && <p>Error fetching data</p>}
+          {isLoading && <p>Loading...</p>}
+        </div>
+
+        {isSuccess && (
+          <div id="blogs">
+            {blogs.map((blog) => (
+              <Blog
+                key={blog.id}
+                blog={blog}
+                likeBlog={likeBlog}
+                removeBlog={removeBlog}
+                user={user}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const Users = () => {
+    const userList = users.map((user) => ({
+      name: user.name,
+      blogs: user.blogs.length
+    }))
+
+    return (
+      <div>
+        <h2>Users</h2>
+
+        <div className="isErrorIsLoading">
+          {usersError && <p>Error fetching data</p>}
+          {usersLoading && <p>Loading...</p>}
+        </div>
+
+        {userSuccess && (
+          <div id="users">
+            <table>
+              <tbody>
+                <tr>
+                  <th />
+                  <th>blogs created</th>
+                </tr>
+                {userList.map((user) => {
+                  return (
+                    <tr key={user.name}>
+                      <td>{user.name}</td>
+                      <td>{user.blogs}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const { data: blogs = [], error, isLoading, isSuccess } = useGetBlogsQuery()
+  const {
+    data: users = [],
+    error: usersError,
+    isLoading: usersLoading,
+    isSuccess: userSuccess
+  } = useGetUsersQuery()
 
   const [
     addNewBlog,
     { error: postError, isError: isPostError }
   ] = useAddNewBlogMutation()
 
-  const [
-    deleteBlog,
-    { error: deleteError, isError: isDeleteError }
-  ] = useRemoveBlogMutation()
+  const [deleteBlog] = useRemoveBlogMutation()
 
   const [updateBlog] = useUpdateBlogMutation()
 
@@ -47,18 +121,7 @@ const App = () => {
     }
   }, [])
 
-  let timerId = undefined
   const dispatch = useDispatch()
-
-  const byLikes = (b1, b2) => (b2.likes > b1.likes ? 1 : -1)
-  const sortedBlogs = useMemo(
-    () => {
-      const sortedBlogs = blogs.slice()
-      sortedBlogs.sort(byLikes)
-      return sortedBlogs
-    },
-    [blogs]
-  )
 
   const login = async (username, password) => {
     loginService
@@ -106,13 +169,6 @@ const App = () => {
     }
 
     deleteBlog(id)
-
-    if (isDeleteError) {
-      notify('removing the blog failed: ' + deleteError, 'alert')
-      return
-    }
-
-    notify('blog removed')
   }
 
   const likeBlog = async (id) => {
@@ -128,13 +184,9 @@ const App = () => {
   }
 
   const notify = (message, type = 'info') => {
-    if (timerId) {
-      clearTimeout(timerId)
-    }
-
     dispatch(setNotification({ message: message, type: type }))
 
-    timerId = setTimeout(() => {
+    setTimeout(() => {
       dispatch(resetNotification())
     }, 5000)
   }
@@ -151,36 +203,22 @@ const App = () => {
   return (
     <div>
       <h2>blogs</h2>
-
       <Notification />
 
       <div>
-        {user.name} logged in
+        <p>{user.name} logged in</p>
         <button onClick={logout}>logout</button>
       </div>
 
-      <Togglable buttonLabel="new note" ref={blogFormRef}>
-        <NewBlogForm onCreate={createBlog} />
-      </Togglable>
-
-      <div className="isErrorIsLoading">
-        {error && <p>Error fetching data</p>}
-        {isLoading && <p>Loading...</p>}
-      </div>
-
-      {isSuccess && (
-        <div id="blogs">
-          {sortedBlogs.map((blog) => (
-            <Blog
-              key={blog.id}
-              blog={blog}
-              likeBlog={likeBlog}
-              removeBlog={removeBlog}
-              user={user}
-            />
-          ))}
-        </div>
-      )}
+      <Router>
+        <Routes>
+          <Route path="/users" element={<Users />} />
+          <Route
+            path="/"
+            element={<Blogs blogFormRef={blogFormRef} user={user} />}
+          />
+        </Routes>
+      </Router>
     </div>
   )
 }

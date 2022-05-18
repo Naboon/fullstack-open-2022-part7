@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-import Blog from './components/Blog'
+import Blog, { BlogDetails } from './components/Blog'
 import LoginForm from './components/LoginForm'
 import NewBlogForm from './components/NewBlogForm'
 import Notification from './components/Notification'
@@ -23,13 +23,22 @@ import {
   resetNotification
 } from './reducers/notificationReducer'
 
-import { Routes, Route, Link, useMatch } from 'react-router-dom'
+import {
+  Routes,
+  Route,
+  Link,
+  useMatch,
+  Navigate,
+  useNavigate
+} from 'react-router-dom'
 
 const App = () => {
-  const Blogs = ({ blogFormRef, user }) => {
+  const navigate = useNavigate()
+
+  const Blogs = ({ blogFormRef }) => {
     return (
       <div>
-        <Togglable buttonLabel="new note" ref={blogFormRef}>
+        <Togglable buttonLabel="create new" ref={blogFormRef}>
           <NewBlogForm onCreate={createBlog} />
         </Togglable>
 
@@ -40,15 +49,7 @@ const App = () => {
 
         {isSuccess && (
           <div id="blogs">
-            {blogs.map((blog) => (
-              <Blog
-                key={blog.id}
-                blog={blog}
-                likeBlog={likeBlog}
-                removeBlog={removeBlog}
-                user={user}
-              />
-            ))}
+            {blogs.map((blog) => <Blog key={blog.id} blog={blog} />)}
           </div>
         )}
       </div>
@@ -198,6 +199,7 @@ const App = () => {
       return
     }
 
+    navigate('/')
     deleteBlog(id)
   }
 
@@ -226,6 +228,11 @@ const App = () => {
     ? users.find((user) => user.id === userMatch.params.id)
     : null
 
+  const blogMatch = useMatch('/blogs/:id')
+  const blogById = blogMatch
+    ? blogs.find((blog) => blog.id === blogMatch.params.id)
+    : null
+
   if (user === null) {
     return (
       <div>
@@ -246,6 +253,18 @@ const App = () => {
       </div>
 
       <Routes>
+        <Route
+          path="/blogs/:id"
+          element={
+            <BlogDetails
+              blog={blogById}
+              likeBlog={likeBlog}
+              removeBlog={removeBlog}
+              user={user}
+            />
+          }
+        />
+        <Route path="/blogs" element={<Navigate replace to="/" />} />
         <Route path="/users/:id" element={<User user={userById} />} />
         <Route path="/users" element={<Users />} />
         <Route

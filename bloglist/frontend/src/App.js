@@ -125,6 +125,29 @@ const App = () => {
     )
   }
 
+  const NavBar = () => {
+    const navBarStyle = {
+      background: '#aaadab'
+    }
+
+    const linkStyle = {
+      padding: 5
+    }
+
+    return (
+      <div style={navBarStyle}>
+        <Link style={linkStyle} to="/">
+          blogs
+        </Link>
+        <Link style={linkStyle} to="/users">
+          users
+        </Link>
+        {user.name} logged in
+        <button onClick={logout}>logout</button>
+      </div>
+    )
+  }
+
   const { data: blogs = [], error, isLoading, isSuccess } = useGetBlogsQuery()
   const {
     data: users = [],
@@ -244,13 +267,10 @@ const App = () => {
 
   return (
     <div>
+      <NavBar />
+
       <h2>blogs</h2>
       <Notification />
-
-      <div>
-        <p>{user.name} logged in</p>
-        <button onClick={logout}>logout</button>
-      </div>
 
       <Routes>
         <Route

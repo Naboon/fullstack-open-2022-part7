@@ -1,5 +1,13 @@
 import PropTypes from 'prop-types'
-import { Link } from 'react-router-dom'
+import { Link as RouterLink } from 'react-router-dom'
+import {
+  Link,
+  Typography,
+  Button,
+  List,
+  ListItem,
+  Divider
+} from '@mui/material'
 
 export const BlogDetails = ({ blog, likeBlog, removeBlog, user }) => {
   if (!blog) {
@@ -10,41 +18,47 @@ export const BlogDetails = ({ blog, likeBlog, removeBlog, user }) => {
 
   return (
     <div>
-      <h2>
-        {blog.title} {blog.author}
-      </h2>
-      <div>
-        <a href={blog.url}>{blog.url}</a>
-      </div>
+      <Typography variant="h4">
+        {blog.title} by {blog.author}
+      </Typography>
+      <Link href={blog.url}>{blog.url}</Link>
       <div>
         {blog.likes} likes{' '}
-        <button onClick={() => likeBlog(blog.id)}>like</button>
+        <Button
+          variant="contained"
+          color="success"
+          size="small"
+          onClick={() => likeBlog(blog.id)}
+        >
+          like
+        </Button>
       </div>
       added by {addedBy}
       {user.username === blog.user.username && (
-        <button onClick={() => removeBlog(blog.id)}>remove</button>
+        <Button
+          variant="contained"
+          color="error"
+          size="small"
+          onClick={() => removeBlog(blog.id)}
+        >
+          remove
+        </Button>
       )}
-      <h3>comments</h3>
-      <ul>
+      <Divider />
+      <Typography variant="h5">comments</Typography>
+      <List>
         {blog.comments.map((comment) => {
-          return <li key={comment}>{comment}</li>
+          return <ListItem key={comment}>{comment}</ListItem>
         })}
-      </ul>
+      </List>
     </div>
   )
 }
 
 const Blog = ({ blog }) => {
-  const style = {
-    padding: 3,
-    margin: 5,
-    borderStyle: 'solid',
-    borderWidth: 1
-  }
-
   return (
-    <div style={style} className="blog">
-      <Link to={`/blogs/${blog.id}`}>
+    <div className="blog">
+      <Link component={RouterLink} to={`/blogs/${blog.id}`}>
         {blog.title} {blog.author}
       </Link>
     </div>

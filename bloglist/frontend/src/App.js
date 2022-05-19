@@ -10,6 +10,24 @@ import loginService from './services/login'
 import userService from './services/user'
 
 import {
+  Container,
+  Link,
+  AppBar,
+  Toolbar,
+  Button,
+  IconButton,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TableContainer
+} from '@mui/material'
+import LogoutIcon from '@mui/icons-material/Logout'
+import Paper from '@mui/material/Paper'
+
+import {
   useGetBlogsQuery,
   useGetUsersQuery,
   useAddNewBlogMutation,
@@ -26,7 +44,7 @@ import {
 import {
   Routes,
   Route,
-  Link,
+  Link as RouterLink,
   useMatch,
   Navigate,
   useNavigate
@@ -39,7 +57,7 @@ const App = () => {
     return (
       <div>
         <Togglable buttonLabel="create new" ref={blogFormRef}>
-          <NewBlogForm onCreate={createBlog} />
+          <NewBlogForm onCreate={createBlog} notify={notify} />
         </Togglable>
 
         <div className="isErrorIsLoading">
@@ -48,9 +66,26 @@ const App = () => {
         </div>
 
         {isSuccess && (
-          <div id="blogs">
-            {blogs.map((blog) => <Blog key={blog.id} blog={blog} />)}
-          </div>
+          // <Box sx={{ border: '1px solid grey', padding: 5 }}>
+          //   <Stack divider={<Divider flexItem />} spacing={2}>
+          //     {blogs.map((blog) => <Blog key={blog.id} blog={blog} />)}
+          //   </Stack>
+          // </Box>
+          <TableContainer component={Paper} sx={{ background: '#b8cef2' }}>
+            <Table>
+              <TableBody>
+                {blogs.map((blog) => {
+                  return (
+                    <TableRow key={blog.id}>
+                      <TableCell>
+                        <Blog blog={blog} />
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
       </div>
     )
@@ -65,7 +100,7 @@ const App = () => {
 
     return (
       <div>
-        <h2>Users</h2>
+        <Typography variant="h4">Users</Typography>
 
         <div className="isErrorIsLoading">
           {usersError && <p>Error fetching data</p>}
@@ -74,24 +109,30 @@ const App = () => {
 
         {userSuccess && (
           <div id="users">
-            <table>
-              <tbody>
-                <tr>
-                  <th />
-                  <th>blogs created</th>
-                </tr>
-                {userList.map((user) => {
-                  return (
-                    <tr key={user.id}>
-                      <td>
-                        <Link to={`/users/${user.id}`}>{user.name}</Link>
-                      </td>
-                      <td>{user.blogs}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+            <TableContainer component={Paper} sx={{ background: '#b8cef2' }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell />
+                    <TableCell>blogs created</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {userList.map((user) => {
+                    return (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <Link component={RouterLink} to={`/users/${user.id}`}>
+                            {user.name}
+                          </Link>
+                        </TableCell>
+                        <TableCell>{user.blogs}</TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </div>
         )}
       </div>
@@ -126,25 +167,32 @@ const App = () => {
   }
 
   const NavBar = () => {
-    const navBarStyle = {
-      background: '#aaadab'
-    }
-
-    const linkStyle = {
-      padding: 5
-    }
-
     return (
-      <div style={navBarStyle}>
-        <Link style={linkStyle} to="/">
-          blogs
-        </Link>
-        <Link style={linkStyle} to="/users">
-          users
-        </Link>
-        {user.name} logged in
-        <button onClick={logout}>logout</button>
-      </div>
+      <AppBar position="static">
+        <Toolbar>
+          <Typography variant="h4">Blog App</Typography>
+          <Button
+            sx={{ margin: 1 }}
+            color="inherit"
+            component={RouterLink}
+            to="/"
+          >
+            blogs
+          </Button>
+          <Button
+            sx={{ margin: 1 }}
+            color="inherit"
+            component={RouterLink}
+            to="/users"
+          >
+            users
+          </Button>
+          {user.name} logged in
+          <IconButton color="inherit" onClick={logout}>
+            <LogoutIcon />
+          </IconButton>
+        </Toolbar>
+      </AppBar>
     )
   }
 
@@ -156,10 +204,7 @@ const App = () => {
     isSuccess: userSuccess
   } = useGetUsersQuery()
 
-  const [
-    addNewBlog,
-    { error: postError, isError: isPostError }
-  ] = useAddNewBlogMutation()
+  const [addNewBlog] = useAddNewBlogMutation()
   const [deleteBlog] = useRemoveBlogMutation()
   const [updateBlog] = useUpdateBlogMutation()
 
@@ -200,12 +245,6 @@ const App = () => {
 
   const createBlog = async (blog) => {
     await addNewBlog(blog)
-
-    if (isPostError) {
-      notify('creating a blog failed: ' + postError, 'alert')
-      return
-    }
-
     notify(`a new blog '${blog.title}' by ${blog.author} added`)
     blogFormRef.current.toggleVisibility()
   }
@@ -257,41 +296,44 @@ const App = () => {
 
   if (user === null) {
     return (
-      <div>
-        <Notification notification />
-        <LoginForm onLogin={login} />
-      </div>
+      <Container>
+        <div>
+          <Notification notification />
+          <LoginForm onLogin={login} />
+        </div>
+      </Container>
     )
   }
 
   return (
-    <div>
-      <NavBar />
+    <Container>
+      <div>
+        <NavBar />
 
-      <h2>blogs</h2>
-      <Notification />
+        <Notification />
 
-      <Routes>
-        <Route
-          path="/blogs/:id"
-          element={
-            <BlogDetails
-              blog={blogById}
-              likeBlog={likeBlog}
-              removeBlog={removeBlog}
-              user={user}
-            />
-          }
-        />
-        <Route path="/blogs" element={<Navigate replace to="/" />} />
-        <Route path="/users/:id" element={<User user={userById} />} />
-        <Route path="/users" element={<Users />} />
-        <Route
-          path="/"
-          element={<Blogs blogFormRef={blogFormRef} user={user} />}
-        />
-      </Routes>
-    </div>
+        <Routes>
+          <Route
+            path="/blogs/:id"
+            element={
+              <BlogDetails
+                blog={blogById}
+                likeBlog={likeBlog}
+                removeBlog={removeBlog}
+                user={user}
+              />
+            }
+          />
+          <Route path="/blogs" element={<Navigate replace to="/" />} />
+          <Route path="/users/:id" element={<User user={userById} />} />
+          <Route path="/users" element={<Users />} />
+          <Route
+            path="/"
+            element={<Blogs blogFormRef={blogFormRef} user={user} />}
+          />
+        </Routes>
+      </div>
+    </Container>
   )
 }
 

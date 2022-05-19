@@ -1,12 +1,20 @@
 import { useState } from 'react'
 
-const NewBlogForm = ({ onCreate }) => {
+import { TextField, Button, Typography } from '@mui/material'
+
+const NewBlogForm = ({ onCreate, notify }) => {
   const [title, setTitle] = useState('')
   const [author, setAuthor] = useState('')
   const [url, setUrl] = useState('')
 
   const handleSubmit = (event) => {
     event.preventDefault()
+
+    if (!title || !author || !url) {
+      notify('fill out all fields before submitting', 'alert')
+      return
+    }
+
     onCreate({ title, author, url, likes: 0 })
     setAuthor('')
     setTitle('')
@@ -15,39 +23,45 @@ const NewBlogForm = ({ onCreate }) => {
 
   return (
     <div>
-      <h2>Create new</h2>
+      <Typography variant="h3">Create new blog</Typography>
 
       <form onSubmit={handleSubmit}>
         <div>
-          title
-          <input
+          <TextField
+            id="title"
+            sx={{ width: '360px' }}
+            label="title"
             value={title}
             onChange={({ target }) => setTitle(target.value)}
-            id="title"
-            placeholder="title of the blog"
           />
         </div>
         <div>
-          author
-          <input
+          <TextField
+            id="author"
+            sx={{ width: '360px' }}
+            label="author"
             value={author}
             onChange={({ target }) => setAuthor(target.value)}
-            id="author"
-            placeholder="author of the blog"
           />
         </div>
         <div>
-          url
-          <input
+          <TextField
+            id="url"
+            sx={{ width: '360px' }}
+            label="URL"
             value={url}
             onChange={({ target }) => setUrl(target.value)}
-            id="url"
-            placeholder="url of the blog"
           />
         </div>
-        <button id="create-button" type="submit">
+        <Button
+          id="create-button"
+          sx={{ width: '90px' }}
+          variant="outlined"
+          color="primary"
+          type="submit"
+        >
           create
-        </button>
+        </Button>
       </form>
     </div>
   )

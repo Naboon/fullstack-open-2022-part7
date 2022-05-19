@@ -160,9 +160,7 @@ const App = () => {
     addNewBlog,
     { error: postError, isError: isPostError }
   ] = useAddNewBlogMutation()
-
   const [deleteBlog] = useRemoveBlogMutation()
-
   const [updateBlog] = useUpdateBlogMutation()
 
   const [user, setUser] = useState(null)
@@ -186,6 +184,7 @@ const App = () => {
       .then((user) => {
         setUser(user)
         userService.setUser(user)
+        navigate('/')
         notify(`${user.name} logged in!`)
       })
       .catch(() => {
